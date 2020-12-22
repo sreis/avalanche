@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -29,13 +30,14 @@ var userAgent = "avalanche"
 
 // ConfigWrite for the remote write requests.
 type ConfigWrite struct {
-	URL             url.URL
-	RequestInterval time.Duration
-	BatchSize,
-	RequestCount int
-	UpdateNotify chan struct{}
-	PprofURLs    []*url.URL
-	Tenant       string
+	URL                url.URL
+	RequestInterval    time.Duration
+	BatchSize          int
+	RequestCount       int
+	UpdateNotify       chan struct{}
+	PprofURLs          []*url.URL
+	Tenant             string
+	InsecureSkipVerify bool
 }
 
 // Client for the remote write requests.
@@ -48,7 +50,11 @@ type Client struct {
 // SendRemoteWrite initializes a http client and
 // sends metrics to a prometheus compatible remote endpoint.
 func SendRemoteWrite(config ConfigWrite) error {
-	var rt http.RoundTripper = &http.Transport{}
+	var rt http.RoundTripper = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: config.InsecureSkipVerify,
+		},
+	}
 	rt = &cortexTenantRoundTripper{tenant: config.Tenant, rt: rt}
 	httpClient := &http.Client{Transport: rt}
 
