@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"strconv"
@@ -30,6 +31,7 @@ var (
 	remoteRequestCount       = kingpin.Flag("remote-requests-count", "how many requests to send in total to the remote_write API.").Default("100").Int()
 	remoteReqsInterval       = kingpin.Flag("remote-write-interval", "delay between each remote write request.").Default("100ms").Duration()
 	remoteTenant             = kingpin.Flag("remote-tenant", "Tenant ID to include in remote_write send").Default("0").String()
+	remoteAuthTokenFile      = kingpin.Flag("remote-auth-token-file", "File containing bearer token to send to the server.").Default("").String()
 	remoteInsecureSkipVerify = kingpin.Flag("remote-insecure-skip-verify", "If true, ignores the server certificate being signed by an unknown CA.").Default("false").Bool()
 )
 
@@ -63,6 +65,13 @@ func main() {
 			Tenant:             *remoteTenant,
 			InsecureSkipVerify: *remoteInsecureSkipVerify,
 		}
+
+		if *remoteAuthTokenFile != "" {
+			authToken, err := ioutil.ReadFile(*remoteAuthTokenFile)
+			if err != nil {
+				log.Fatalf("failed to read auth token file: %v", err)
+			}
+			config.AuthToken = string(authToken)
 		}
 
 		// Collect Pprof during the write only if not collecting within a regular interval.

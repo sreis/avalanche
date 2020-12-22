@@ -37,6 +37,7 @@ type ConfigWrite struct {
 	UpdateNotify       chan struct{}
 	PprofURLs          []*url.URL
 	Tenant             string
+	AuthToken          string
 	InsecureSkipVerify bool
 }
 
@@ -256,6 +257,9 @@ func (c *Client) Store(ctx context.Context, req *prompb.WriteRequest) error {
 	httpReq.Header.Set("Content-Type", "application/x-protobuf")
 	httpReq.Header.Set("User-Agent", userAgent)
 	httpReq.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+	if c.config.AuthToken != "" {
+		httpReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.AuthToken))
+	}
 	httpReq = httpReq.WithContext(ctx)
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
